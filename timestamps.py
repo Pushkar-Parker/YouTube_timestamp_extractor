@@ -31,9 +31,12 @@ def get_timestamps(link):
     # Parse the HTML with BeautifulSoup
     soup = BeautifulSoup(html_source, "html.parser")
 
-    # Regex to match time values
-    time_pattern = re.compile(r"^(?:\d+:)?\d{1,2}:\d{2}$") # Captures the time pattern of HH:MM:SS
+    # Extract the video title from the <title> tag in the <head> section
+    video_title_tag = soup.find("title")
+    video_title = video_title_tag.text.strip() if video_title_tag else "Unknown Title"
 
+    # Regex to match time values
+    time_pattern = re.compile(r"^(?:\d+:)?\d{1,2}:\d{2}$")  # Captures the time pattern of HH:MM:SS
 
     # Initialize the result list
     result = []
@@ -45,25 +48,23 @@ def get_timestamps(link):
     for element in elements:
         if element.text and time_pattern.match(element.text.strip()):
             time_value = element.text.strip()
-            
+
             # Find parent or sibling with a title attribute (adjust if necessary)
             parent_or_sibling = element.find_parent("h4") or element.find_previous_sibling("h4")
             title = parent_or_sibling["title"] if parent_or_sibling and parent_or_sibling.has_attr("title") else None
-            
+
             # Append the result to the list
             result.append({"time": time_value, "title": title})
 
-    return result
+    return video_title, result
 
 def processed_timestamps(link):
-    timestamp_data = get_timestamps(link)
+    video_title, timestamp_data = get_timestamps(link)
     processed_result = {}
+    processed_title = video_title[:len(video_title) - 10]
 
-    for i, item in enumerate(timestamp_data):
-        if item['title'] != None:
-            data = {item['title'] : item['time']}
-            processed_result.update(data)
-        else:
-            pass
+    for item in timestamp_data:
+        if item['title'] is not None:
+            processed_result[item['title']] = item['time']
 
-    return processed_result
+    return processed_title, processed_result
